@@ -7,7 +7,7 @@ import { onfire } from "../tools/onfire/onfire";
 const {ccclass, property} = cc._decorator;
 
 @ccclass
-export default class Card extends BaseObj {
+export default class Card extends cc.Component {
     // properties
     id;
     star;

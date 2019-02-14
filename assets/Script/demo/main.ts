@@ -5,6 +5,8 @@ import Card from "./Card";
 import { TableMgr } from "../mgr/TableMgr";
 import { Tools } from "../mgr/Tools";
 import StoreCardCell from "./StoreCardCell";
+import WarehouseCardCell from "./WarehouseCardCell";
+import FormationCardCell from "./FormationCardCell";
 
 
 
@@ -33,6 +35,9 @@ export default class Game extends BaseObj {
 
 
 
+    storeLen = 6;
+    warehouseLen = 8;
+
     cellWidth;
     cellHeight;
     
@@ -40,6 +45,8 @@ export default class Game extends BaseObj {
         onfire.on('warehouse_card_touch_move', this.onCardMove.bind(this));
         onfire.on('warehouse_card_touch_end', this.onCardMoveEnd.bind(this));
         onfire.on('warehouse_card_touch_cancel', this.onCardMoveCancel.bind(this));
+        onfire.on('store_card_buy', this.onStoreCardBuy.bind(this));
+
     }
     start(){
         this.init()
@@ -58,7 +65,7 @@ export default class Game extends BaseObj {
         this.cellHeight = Math.floor(this._board.height / GameMgr.f_row);
         for (let i = 0; i < GameMgr.f_column * GameMgr.f_row; i++) {
             let node = cc.instantiate(this._boardCell)
-            node.name = `cell_${i}`;
+            node.name = `boardCell_${i}`;
             node.width = this.cellWidth;
             node.height = this.cellHeight;
             node.getChildByName('bg').width = this.cellWidth - 5;
@@ -75,8 +82,11 @@ export default class Game extends BaseObj {
             case 'store':
                 this._store.active = false;
                 break;
-            case 'refreshStore'
-                
+            case 'refresh':
+                this.refreshStore();
+                break;
+            case 'buyCard':
+
                 break;
             default:
                 break;
@@ -91,12 +101,32 @@ export default class Game extends BaseObj {
                 if (child.getBoundingBoxToWorld().contains(w_card_pos)) {
                     child.getChildByName('bg').color = cc.Color.RED;
                     cc.log(child.name)
-                    let w_child_pos = this._board.convertToWorldSpaceAR(child.position);
-                    card.node.position = child.parent.convertToNodeSpaceAR(w_child_pos);
+                    // let w_child_pos = this._board.convertToWorldSpaceAR(child.position);
+                    // card.node.position = child.parent.convertToNodeSpaceAR(w_child_pos);
+                    if(card.node.name == this._warehouseCardCell.name){
+                        let cardData = card.node.getComponent(WarehouseCardCell).data;
+                        this.delCardFromWarehouse(cardData.idx);
+                        this.addCardToFormation(i, cardData.heroid)
+                    }
                 }
             }
         }else if (this._warehouse.getBoundingBoxToWorld().contains(w_card_pos)) {
-            
+            if(card.name == this._warehouseCardCell.name){
+                for (let i = 0; i < this._warehouse.childrenCount; i++) {
+                    let child = this._warehouse.children[i];
+                    if (child.getBoundingBoxToWorld().contains(w_card_pos)) {
+                        // child.getChildByName('bg').color = cc.Color.RED;
+                        // cc.log(child.name)
+                        // let w_child_pos = this._board.convertToWorldSpaceAR(child.position);
+                        // card.node.position = child.parent.convertToNodeSpaceAR(w_child_pos);
+                        if(card.node.name == this._formationCardCell.name){
+                            let cardData = card.node.getComponent(WarehouseCardCell).data;
+                            this.delCardFromWarehouse(cardData.idx);
+                            this.addCardToFormation(i, cardData.heroid)
+                        }
+                    }
+                }       
+            }
         }
     }
     onCardMoveCancel(card:Card){
@@ -146,31 +176,69 @@ export default class Game extends BaseObj {
 
     }
 
-    addCardToWarehouse(id){
-        
-    }
-    delCardToWarehouse(){
-
-    }
-    addCardToFormation(id){
-
-    }
-    delCardToFormation(){
-
-    }
-    addCardToStore(idx,id){
-        let name = '_storeCardCell'
+    addCardToWarehouse(idx,id){
         let table = TableMgr.getBaseInfo('h_hero', id);
-        let node = cc.instantiate(this._storeCardCell)
-        let cardNode = this._storeCard.children[idx].getChildByName(name);
+        let node = cc.instantiate(this._warehouseCardCell)
+        let cardNode = this._warehouse.children[idx].getChildByName(this._warehouseCardCell.name);
         if (!cardNode) {
             cardNode = node;
+            cardNode.position = cc.v2()
+            cardNode.parent = this._warehouse.children[idx];
+        }
+        
+        let com = cardNode.getComponent(WarehouseCardCell);
+        table.price = Math.random() * 5;
+        table.idx = idx;
+        com.init(table)
+    }
+    delCardFromWarehouse(idx){
+        let cardNode = this._warehouse.children[idx].getChildByName(this._warehouseCardCell.name);
+        if (cardNode) {
+            cardNode.destroy();
+        }
+    }
+    addCardToFormation(idx,id){
+        let table = TableMgr.getBaseInfo('h_hero', id);
+        let node = cc.instantiate(this._formationCardCell)
+        let parentNode = this._board.getChildByName('boardCell_'+idx);
+        let cardNode = parentNode.getChildByName(this._formationCardCell.name);
+        if (!cardNode) {
+            cardNode = node;
+            cardNode.position = cc.v2(0,node.height/2);
+            cardNode.parent = parentNode;
+        }
+        
+        let com = cardNode.getComponent(FormationCardCell);
+        table.price = Math.random() * 5;
+        table.idx = idx;
+        com.init(table)
+    }
+    delCardFromFormation(idx){
+        let cardNode = this._board.getChildByName('boardCell_'+idx).getChildByName(this._formationCardCell.name);
+        if (cardNode) {
+            cardNode.destroy();
+        }
+    }
+    addCardToStore(idx,id){
+        let table = TableMgr.getBaseInfo('h_hero', id);
+        let node = cc.instantiate(this._storeCardCell)
+        let cardNode = this._storeCard.children[idx].getChildByName(this._storeCardCell.name);
+        if (!cardNode) {
+            cardNode = node;
+            cardNode.position = cc.v2()
             cardNode.parent = this._storeCard.children[idx];
         }
         
         let com = cardNode.getComponent(StoreCardCell);
         table.price = Math.random() * 5;
+        table.idx = idx;
         com.init(table)
+    }
+    delCardFromStore(idx){
+        let cardNode = this._storeCard.children[idx].getChildByName(this._storeCardCell.name);
+        if (cardNode) {
+            cardNode.destroy();
+        }
     }
 
     refreshStore(){
@@ -186,6 +254,23 @@ export default class Game extends BaseObj {
             this.addCardToStore(i,keys[idx]);
         }
         // this.addCardToStore(0,keys[0]);
+    }
+
+    onStoreCardBuy(data){
+        
+        for (let i = 0; i < this.warehouseLen; i++) {
+            let cardNode = this._warehouse.children[i].getChildByName(this._warehouseCardCell.name);
+            if (!cardNode) {
+                this.delCardFromStore(data.idx);
+                this.addCardToWarehouse(i, data.heroid)
+                return;
+            }
+        }
+        cc.log('仓库已满')
+    }
+
+    checkCardComposite(){
+
     }
 
 }

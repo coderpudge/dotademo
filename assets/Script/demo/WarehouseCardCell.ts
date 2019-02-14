@@ -5,7 +5,7 @@ import { onfire } from "../tools/onfire/onfire";
 const {ccclass, property} = cc._decorator;
 
 @ccclass
-export default class StoreCardCell extends BaseObj {
+export default class WarehouseCardCell extends BaseObj {
     // properties
     _cardName:cc.Node;
     _cid:cc.Node;
