@@ -10,22 +10,35 @@ class GameMgrClass{
     timeDiff = 0; // 与服务器时间差
     round = 0; //回合
     step=0; // 步
-    store = []; //刷新商店
-    warehouse = {}; //仓库
-    report = null;
-    formation = {}; //阵型
     pop = 1; //人口population
-
+    store = {}; //刷新商店
+    warehouse = {}; //仓库
+    formation = []; //阵型
+    report = null;
+    f_row = 6; //棋盘阵型 行数
+    f_column = 8; //棋盘阵型 列数
+    f_def_value = -1;
 
     /**
      * 棋盘
-        1 2 3 4     5 6 7 8
-        2
-        3
-        4
-        5
-        6
+    6  5  11 17 23 29 45 41 47
+    5  4  10 16 22 28 34 40 46
+    4  3  9  15 21 27 33 39 45
+    3  2  8  14 20 26 32 38 44
+    2  1  7  13 19 25 31 37 43
+    1  0  6  12 18 24 30 36 42
+       1  2  3  4  5  6  7  8
     */
+    initFormation(){
+        this.formation = [];
+        for (let i = 0; i < this.f_row * this.f_column; i++) {
+            this.formation.push(this.f_def_value);
+        }
+    }
+
+    
+
+
     constructor(){
         // register event msg
         
@@ -123,9 +136,36 @@ class GameMgrClass{
                     // 刷新商店
                     store:[ 
                         {
-                            id:1,
-                            price:1,
-                        }
+                            pos:1,
+                            cardId:1,
+                        },
+                        {
+                            pos:2,
+                            cardId:2,
+                        },
+                        
+                    ],
+                    // 仓库
+                    warehouse:[
+                        {
+                            pos:1,
+                            cardId:3,
+                        },
+                        {
+                            pos:2,
+                            cardId:4,
+                        },
+                    ],
+                    // 阵型
+                    formation:[
+                        {
+                            pos:1,
+                            cardId:3,
+                        },
+                        {
+                            pos:2,
+                            cardId:4,
+                        },
                     ],
                     report:{
                         //战报
@@ -133,7 +173,10 @@ class GameMgrClass{
                 }
                 this.round = objc.round;
                 this.step = objc.step;
-                this.store = objc.store;
+                for (const data of objc.store) {
+                    this.store[data.pos] = data.cardId;
+                }
+                // this.store = objc.store;
                 this.report = objc.report;
                 
                 this.checkRound();

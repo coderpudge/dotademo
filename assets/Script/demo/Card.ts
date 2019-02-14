@@ -26,7 +26,7 @@ export default class Card extends BaseObj {
                 
             event.stopPropagation();
             var delta = event.touch.getDelta();
-            let toPos = cc.p(this.node.x + delta.x, this.node.y + delta.y);
+            let toPos = cc.v2(this.node.x + delta.x, this.node.y + delta.y);
             this.node.position = toPos;
         
             if (delta.mag() > 7) {
@@ -36,13 +36,13 @@ export default class Card extends BaseObj {
                 // cancelEvent.simulate = true;
                 event.target.dispatchEvent(cancelEvent);
             }
-            onfire.fire('warehouse_card_touch_move',this.node);
+            onfire.fire('warehouse_card_touch_move',this);
         }, this);
         this.node.on(cc.Node.EventType.TOUCH_END, function (event,touch) {
-            onfire.fire('warehouse_card_touch_end',this.node);
+            onfire.fire('warehouse_card_touch_end',this);
         }, this);
         this.node.on(cc.Node.EventType.TOUCH_CANCEL, function (event,touch) {
-            onfire.fire('warehouse_card_touch_cancel',this.node);
+            onfire.fire('warehouse_card_touch_cancel',this);
         }, this);
     }
     
