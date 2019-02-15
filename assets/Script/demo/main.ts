@@ -26,6 +26,7 @@ export default class Game extends BaseObj {
     private _store:cc.Node;
     private _storeCard:cc.Node;
     private _warehouse:cc.Node;
+    private _formation:cc.Node;
     private _board:cc.Node;
     private _boardCell:cc.Node;
 
@@ -73,7 +74,7 @@ export default class Game extends BaseObj {
             node.parent = this._board;
             let rowNum = i % GameMgr.f_row;
             let columnNum = Math.floor(i / GameMgr.f_row);
-            node.position= cc.v2(this.cellWidth * (columnNum + 1 - 0.5) - this._board.width/2, this.cellHeight * (rowNum + 1 - 0.5) - this._board.height/2);
+            node.position= cc.v2(this.cellWidth * (columnNum + 1 - 0.5) - this._board.width/2, - this.cellHeight * (rowNum + 1 - 0.5) + this._board.height/2);
         }
     }
 
@@ -107,6 +108,10 @@ export default class Game extends BaseObj {
                         let cardData = card.node.getComponent(WarehouseCardCell).data;
                         this.delCardFromWarehouse(cardData.idx);
                         this.addCardToFormation(i, cardData.heroid)
+                    }else if(card.node.name == this._formationCardCell.name){
+                        let cardData = card.node.getComponent(FormationCardCell).data;
+                        this.delCardFromFormation(cardData.idx);
+                        this.addCardToFormation(i, cardData.heroid)
                     }
                 }
             }
@@ -123,6 +128,8 @@ export default class Game extends BaseObj {
                             let cardData = card.node.getComponent(WarehouseCardCell).data;
                             this.delCardFromWarehouse(cardData.idx);
                             this.addCardToFormation(i, cardData.heroid)
+                        }else if (card.node.name == this._formationCardCell.name) {
+                            let cardData = card.node.getComponent(FormationCardCell).data;
                         }
                     }
                 }       
@@ -200,12 +207,12 @@ export default class Game extends BaseObj {
     addCardToFormation(idx,id){
         let table = TableMgr.getBaseInfo('h_hero', id);
         let node = cc.instantiate(this._formationCardCell)
-        let parentNode = this._board.getChildByName('boardCell_'+idx);
-        let cardNode = parentNode.getChildByName(this._formationCardCell.name);
+        let mapNode = this._board.getChildByName('boardCell_'+idx);
+        let cardNode = this._formation.getChildByName(this._formationCardCell.name+idx);
         if (!cardNode) {
             cardNode = node;
-            cardNode.position = cc.v2(0,node.height/2);
-            cardNode.parent = parentNode;
+            cardNode.position = cc.v2(mapNode.position.x, mapNode.position.y + node.height/2)
+            cardNode.parent = this._formation;
         }
         
         let com = cardNode.getComponent(FormationCardCell);
@@ -213,8 +220,18 @@ export default class Game extends BaseObj {
         table.idx = idx;
         com.init(table)
     }
+
+    resetFormationCardPos(idx){
+        let parentNode = this._board.getChildByName('boardCell_'+idx);
+        let cardNode = parentNode.getChildByName(this._formationCardCell.name);
+        if (cardNode) {
+            
+        }
+    }
+
     delCardFromFormation(idx){
-        let cardNode = this._board.getChildByName('boardCell_'+idx).getChildByName(this._formationCardCell.name);
+        // let cardNode = this._board.getChildByName('boardCell_'+idx).getChildByName(this._formationCardCell.name);
+        let cardNode = this._formation.getChildByName(this._formationCardCell.name+idx);
         if (cardNode) {
             cardNode.destroy();
         }
