@@ -33,6 +33,8 @@ export default class Game extends BaseObj {
     private _storeCardCell:cc.Node;
     private _formationCardCell:cc.Node;
     private _warehouseCardCell:cc.Node;
+    private _spaceNode:cc.Node;
+
 
 
 
@@ -43,9 +45,10 @@ export default class Game extends BaseObj {
     cellHeight;
     
     onLoad(){
-        onfire.on('warehouse_card_touch_move', this.onCardMove.bind(this));
-        onfire.on('warehouse_card_touch_end', this.onCardMoveEnd.bind(this));
-        onfire.on('warehouse_card_touch_cancel', this.onCardMoveCancel.bind(this));
+        onfire.on('card_touch_move', this.onCardTouchMove.bind(this));
+        onfire.on('card_touch_start', this.onCardTouchStart.bind(this));
+        onfire.on('card_touch_end', this.onCardTouchMoveEnd.bind(this));
+        onfire.on('card_touch_cancel', this.onCardTouchCancel.bind(this));
         onfire.on('store_card_buy', this.onStoreCardBuy.bind(this));
 
     }
@@ -94,13 +97,29 @@ export default class Game extends BaseObj {
         }
     }
 
-    onCardMoveEnd(card:Card){
+    onCardTouchStart(card:Card){
         let w_card_pos = card.node.parent.convertToWorldSpaceAR(card.node.position);
+        if (card.node.name.indexOf(this._formationCardCell.name) != -1) {
+            card.node.parent = this._spaceNode;
+            let pos = this._spaceNode.convertToNodeSpaceAR(w_card_pos);
+            card.node.position = pos;
+        }
+    }
+
+    onCardTouchMoveEnd(card:Card){
+        let w_card_pos = card.node.parent.convertToWorldSpaceAR(card.node.position);
+        // 阵型区
         if (this._board.getBoundingBoxToWorld().contains(w_card_pos)) {
             for (let i = 0; i  < this._board.childrenCount; i++) {
                 let child = this._board.children[i];
                 if (child.getBoundingBoxToWorld().contains(w_card_pos)) {
-                    child.getChildByName('bg').color = cc.Color.RED;
+                    let node = this._formation.getChildByName(this._formationCardCell.name + i)
+                    if (node) {
+                        child.getChildByName('bg').color = cc.Color.RED;
+                    }else{
+                        child.getChildByName('bg').color = cc.Color.GREEN;
+                    }
+                    // child.getChildByName('bg').color = cc.Color.RED;
                     cc.log(child.name)
                     // let w_child_pos = this._board.convertToWorldSpaceAR(child.position);
                     // card.node.position = child.parent.convertToNodeSpaceAR(w_child_pos);
@@ -108,42 +127,45 @@ export default class Game extends BaseObj {
                         let cardData = card.node.getComponent(WarehouseCardCell).data;
                         this.delCardFromWarehouse(cardData.idx);
                         this.addCardToFormation(i, cardData.heroid)
-                    }else if(card.node.name == this._formationCardCell.name){
-                        let cardData = card.node.getComponent(FormationCardCell).data;
-                        this.delCardFromFormation(cardData.idx);
-                        this.addCardToFormation(i, cardData.heroid)
+                    }else if(card.node.name.indexOf(this._formationCardCell.name) != -1){
+                        this.resetFormationCardPos(card.node, i)
                     }
                 }
             }
         }else if (this._warehouse.getBoundingBoxToWorld().contains(w_card_pos)) {
-            if(card.name == this._warehouseCardCell.name){
-                for (let i = 0; i < this._warehouse.childrenCount; i++) {
-                    let child = this._warehouse.children[i];
-                    if (child.getBoundingBoxToWorld().contains(w_card_pos)) {
-                        // child.getChildByName('bg').color = cc.Color.RED;
-                        // cc.log(child.name)
-                        // let w_child_pos = this._board.convertToWorldSpaceAR(child.position);
-                        // card.node.position = child.parent.convertToNodeSpaceAR(w_child_pos);
-                        if(card.node.name == this._formationCardCell.name){
-                            let cardData = card.node.getComponent(WarehouseCardCell).data;
-                            this.delCardFromWarehouse(cardData.idx);
-                            this.addCardToFormation(i, cardData.heroid)
-                        }else if (card.node.name == this._formationCardCell.name) {
-                            let cardData = card.node.getComponent(FormationCardCell).data;
-                        }
+            // 仓库区
+            
+            for (let i = 0; i < this._warehouse.childrenCount; i++) {
+                let child = this._warehouse.children[i];
+                if (child.getBoundingBoxToWorld().contains(w_card_pos)) {
+                    // child.getChildByName('bg').color = cc.Color.RED;
+                    // cc.log(child.name)
+                    // let w_child_pos = this._board.convertToWorldSpaceAR(child.position);
+                    // card.node.position = child.parent.convertToNodeSpaceAR(w_child_pos);
+                    if(card.node.name == this._warehouseCardCell.name){
+                        this.resetWarehouseCardPos(card.node, i)
+                    }else if (card.node.name.indexOf(this._formationCardCell.name) != -1) {
+                        let cardData = card.node.getComponent(FormationCardCell).data;
+                        this.delCardFromSpace(cardData.idx);
+                        this.addCardToWarehouse(i, cardData.heroid);
                     }
-                }       
-            }
+                }
+            }       
+            
+        }else{
+            // 其它区域
+            this.restoreFormationCardPos(card.node);
+            this.restoreWarehouseCardPos(card.node);
         }
     }
-    onCardMoveCancel(card:Card){
+    onCardTouchCancel(card:Card){
         for (let i = 0; i  < this._board.childrenCount; i++) {
             let child = this._board.children[i];
             child.getChildByName('bg').color = cc.Color.RED;
         }
     }
 
-    onCardMove(card:Card){
+    onCardTouchMove(card:Card){
         let w_card_pos = card.node.parent.convertToWorldSpaceAR(card.node.position);
 
         if (this._board.getBoundingBoxToWorld().contains(w_card_pos)) {
@@ -153,7 +175,13 @@ export default class Game extends BaseObj {
                     child.getChildByName('bg').color = cc.Color.BLUE;
                     cc.log(child.name)
                 }else{
-                    child.getChildByName('bg').color = cc.Color.RED;
+                    let node = this._formation.getChildByName(this._formationCardCell.name + i)
+                    if (node) {
+                        child.getChildByName('bg').color = cc.Color.RED;
+                    }else{
+                        child.getChildByName('bg').color = cc.Color.GREEN;
+                    }
+                    
                 }
             }
         }else{
@@ -183,6 +211,10 @@ export default class Game extends BaseObj {
 
     }
 
+    moveCardToWarehouse(){
+
+    }
+
     addCardToWarehouse(idx,id){
         let table = TableMgr.getBaseInfo('h_hero', id);
         let node = cc.instantiate(this._warehouseCardCell)
@@ -204,13 +236,20 @@ export default class Game extends BaseObj {
             cardNode.destroy();
         }
     }
+    /**
+     * 添加阵型卡牌
+     * @param idx 
+     * @param id 
+     */
     addCardToFormation(idx,id){
+        let cardName = this._formationCardCell.name+idx;
         let table = TableMgr.getBaseInfo('h_hero', id);
         let node = cc.instantiate(this._formationCardCell)
         let mapNode = this._board.getChildByName('boardCell_'+idx);
-        let cardNode = this._formation.getChildByName(this._formationCardCell.name+idx);
+        let cardNode = this._formation.getChildByName(cardName);
         if (!cardNode) {
             cardNode = node;
+            node.name = cardName;
             cardNode.position = cc.v2(mapNode.position.x, mapNode.position.y + node.height/2)
             cardNode.parent = this._formation;
         }
@@ -221,21 +260,90 @@ export default class Game extends BaseObj {
         com.init(table)
     }
 
-    resetFormationCardPos(idx){
-        let parentNode = this._board.getChildByName('boardCell_'+idx);
-        let cardNode = parentNode.getChildByName(this._formationCardCell.name);
-        if (cardNode) {
-            
+    /**
+     * 重新设置 阵型卡牌位置
+     * @param node 
+     * @param idx 
+     */
+    resetFormationCardPos(node:cc.Node,idx){
+        let cardName = this._formationCardCell.name+idx;
+        let mapNode = this._board.getChildByName('boardCell_'+idx);
+        let cardNode = this._formation.getChildByName(cardName);
+        let com = node.getComponent(FormationCardCell);
+        if (!cardNode) {
+            node.position = cc.v2(mapNode.position.x, mapNode.position.y + node.height/2);
+            node.name = cardName;
+            com.data.idx = idx;
+            node.parent = this._formation
+        }else{
+            cc.log('位置不可用')
+            this.restoreFormationCardPos(node);
+        }
+    }
+    /**
+     * 重新设置 仓库卡牌位置
+     * @param node 
+     * @param idx 
+     */
+    resetWarehouseCardPos(node:cc.Node,idx){
+        let cardNode = this._warehouse.children[idx].getChildByName(this._warehouseCardCell.name);
+        if (!cardNode) {
+            cardNode = node;
+            cardNode.position = cc.v2()
+            cardNode.parent = this._warehouse.children[idx];
+            cardNode.name = this._warehouseCardCell.name;
+            let com = cardNode.getComponent(WarehouseCardCell);
+            com.data.idx = idx;
+        }else{
+            cc.log('位置不可用')
+            this.restoreWarehouseCardPos(node)
+        }
+    }
+    /**
+     * 恢复超出控制区外的 阵型卡牌 位置
+     * @param node 
+     */
+    restoreFormationCardPos(node){
+        let com = node.getComponent(FormationCardCell);
+        if (com) {
+            let mapNode = this._board.getChildByName('boardCell_'+com.data.idx);
+            node.position = cc.v2(mapNode.position.x, mapNode.position.y + node.height/2);
+            node.parent = this._formation
+        }
+    }
+    /**
+     * 恢复超出控制区外的 仓库卡牌 位置
+     * @param node 
+     */
+    restoreWarehouseCardPos(node){
+        let com = node.getComponent(WarehouseCardCell);
+        if (com) {
+            node.position = cc.v2();
         }
     }
 
+    /**
+     * 移除阵型卡牌
+     * @param idx 
+     */
     delCardFromFormation(idx){
-        // let cardNode = this._board.getChildByName('boardCell_'+idx).getChildByName(this._formationCardCell.name);
         let cardNode = this._formation.getChildByName(this._formationCardCell.name+idx);
         if (cardNode) {
             cardNode.destroy();
         }
     }
+    delCardFromSpace(idx){
+        let cardNode = this._spaceNode.getChildByName(this._formationCardCell.name+idx);
+        if (cardNode) {
+            cardNode.destroy();
+        }
+    }
+
+    /**
+     * 生成 刷新商店卡牌
+     * @param idx 
+     * @param id 
+     */
     addCardToStore(idx,id){
         let table = TableMgr.getBaseInfo('h_hero', id);
         let node = cc.instantiate(this._storeCardCell)
@@ -247,10 +355,14 @@ export default class Game extends BaseObj {
         }
         
         let com = cardNode.getComponent(StoreCardCell);
-        table.price = Math.random() * 5;
+        table.price = Math.floor(Math.random() * 5);
         table.idx = idx;
         com.init(table)
     }
+    /**
+     * 移除商店卡牌
+     * @param idx 
+     */
     delCardFromStore(idx){
         let cardNode = this._storeCard.children[idx].getChildByName(this._storeCardCell.name);
         if (cardNode) {
@@ -259,6 +371,10 @@ export default class Game extends BaseObj {
     }
 
     refreshStore(){
+        if (!this._store.active) {
+            this._store.active = true;
+            return;
+        }
         let data = TableMgr.getTable('h_hero');
         let keys = [];
         for (const key in data.tableData) {
@@ -273,6 +389,8 @@ export default class Game extends BaseObj {
         // this.addCardToStore(0,keys[0]);
     }
 
+   
+
     onStoreCardBuy(data){
         
         for (let i = 0; i < this.warehouseLen; i++) {
@@ -286,7 +404,10 @@ export default class Game extends BaseObj {
         cc.log('仓库已满')
     }
 
-    checkCardComposite(){
+    /**
+     * 检查是否可以合成
+     */
+    checkFormationCardComposite(){
 
     }
 

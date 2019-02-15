@@ -36,13 +36,16 @@ export default class Card extends cc.Component {
                 // cancelEvent.simulate = true;
                 event.target.dispatchEvent(cancelEvent);
             }
-            onfire.fire('warehouse_card_touch_move',this);
+            onfire.fire('card_touch_move',this);
         }, this);
         this.node.on(cc.Node.EventType.TOUCH_END, function (event,touch) {
-            onfire.fire('warehouse_card_touch_end',this);
+            onfire.fire('card_touch_end',this);
         }, this);
         this.node.on(cc.Node.EventType.TOUCH_CANCEL, function (event,touch) {
-            onfire.fire('warehouse_card_touch_cancel',this);
+            onfire.fire('card_touch_cancel',this);
+        }, this);
+        this.node.on(cc.Node.EventType.TOUCH_START, function (event,touch) {
+            onfire.fire('card_touch_start',this);
         }, this);
     }
     
