@@ -250,6 +250,7 @@ export default class Game extends BaseObj {
         if (!cardNode) {
             cardNode = node;
             node.name = cardName;
+            node.zIndex = this.getCardFormationZIndex(idx)
             cardNode.position = cc.v2(mapNode.position.x, mapNode.position.y + node.height/2)
             cardNode.parent = this._formation;
         }
@@ -258,6 +259,12 @@ export default class Game extends BaseObj {
         table.price = Math.random() * 5;
         table.idx = idx;
         com.init(table)
+    }
+
+    getCardFormationZIndex(idx){
+        let rowNum = idx % GameMgr.f_row;
+        // let columnNum = Math.floor(idx / GameMgr.f_row);
+        return rowNum;
     }
 
     /**
@@ -273,6 +280,7 @@ export default class Game extends BaseObj {
         if (!cardNode) {
             node.position = cc.v2(mapNode.position.x, mapNode.position.y + node.height/2);
             node.name = cardName;
+            node.zIndex = this.getCardFormationZIndex(idx)
             com.data.idx = idx;
             node.parent = this._formation
         }else{
@@ -308,7 +316,8 @@ export default class Game extends BaseObj {
         if (com) {
             let mapNode = this._board.getChildByName('boardCell_'+com.data.idx);
             node.position = cc.v2(mapNode.position.x, mapNode.position.y + node.height/2);
-            node.parent = this._formation
+            node.parent = this._formation;
+            node.zIndex = this.getCardFormationZIndex(com.data.idx)
         }
     }
     /**
