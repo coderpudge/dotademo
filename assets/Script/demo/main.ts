@@ -126,7 +126,7 @@ export default class Game extends BaseObj {
                     if(card.node.name == this._warehouseCardCell.name){
                         let cardData = card.node.getComponent(WarehouseCardCell).data;
                         this.delCardFromWarehouse(cardData.idx);
-                        this.addCardToFormation(i, cardData.heroid)
+                        this.addCardToFormation(i, cardData)
                     }else if(card.node.name.indexOf(this._formationCardCell.name) != -1){
                         this.resetFormationCardPos(card.node, i)
                     }
@@ -147,7 +147,7 @@ export default class Game extends BaseObj {
                     }else if (card.node.name.indexOf(this._formationCardCell.name) != -1) {
                         let cardData = card.node.getComponent(FormationCardCell).data;
                         this.delCardFromSpace(cardData.idx);
-                        this.addCardToWarehouse(i, cardData.heroid);
+                        this.addCardToWarehouse(i, cardData);
                     }
                 }
             }       
@@ -173,16 +173,22 @@ export default class Game extends BaseObj {
                 let child = this._board.children[i];
                 if (child.getBoundingBoxToWorld().contains(w_card_pos)) {
                     child.getChildByName('bg').color = cc.Color.BLUE;
-                    cc.log(child.name)
-                }else{
                     let node = this._formation.getChildByName(this._formationCardCell.name + i)
                     if (node) {
                         child.getChildByName('bg').color = cc.Color.RED;
                     }else{
-                        child.getChildByName('bg').color = cc.Color.GREEN;
+                        child.getChildByName('bg').color = cc.Color.BLUE;
                     }
-                    
                 }
+                // else{
+                //     let node = this._formation.getChildByName(this._formationCardCell.name + i)
+                //     if (node) {
+                //         child.getChildByName('bg').color = cc.Color.RED;
+                //     }else{
+                //         child.getChildByName('bg').color = cc.Color.GREEN;
+                //     }
+                    
+                // }
             }
         }else{
             for (let i = 0; i  < this._board.childrenCount; i++) {
@@ -215,8 +221,8 @@ export default class Game extends BaseObj {
 
     }
 
-    addCardToWarehouse(idx,id){
-        let table = TableMgr.getBaseInfo('h_hero', id);
+    addCardToWarehouse(idx,table){
+        // let table = TableMgr.getBaseInfo('h_hero', id);
         let node = cc.instantiate(this._warehouseCardCell)
         let cardNode = this._warehouse.children[idx].getChildByName(this._warehouseCardCell.name);
         if (!cardNode) {
@@ -241,9 +247,9 @@ export default class Game extends BaseObj {
      * @param idx 
      * @param id 
      */
-    addCardToFormation(idx,id){
+    addCardToFormation(idx,table){
         let cardName = this._formationCardCell.name+idx;
-        let table = TableMgr.getBaseInfo('h_hero', id);
+        // let table = TableMgr.getBaseInfo('h_hero', id);
         let node = cc.instantiate(this._formationCardCell)
         let mapNode = this._board.getChildByName('boardCell_'+idx);
         let cardNode = this._formation.getChildByName(cardName);
@@ -406,7 +412,7 @@ export default class Game extends BaseObj {
             let cardNode = this._warehouse.children[i].getChildByName(this._warehouseCardCell.name);
             if (!cardNode) {
                 this.delCardFromStore(data.idx);
-                this.addCardToWarehouse(i, data.heroid)
+                this.addCardToWarehouse(i, data)
                 return;
             }
         }
